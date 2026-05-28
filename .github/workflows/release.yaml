@@ -1,0 +1,118 @@
+name: "Release"
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release:
+    name: "Release"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: "Update Release Notes Action"
+        continue-on-error: true
+        uses: smashedr/update-release-notes-action@master
+        with:
+          location: tail
+
+  build:
+    name: "Build"
+    uses: ./.github/workflows/build.yaml
+    needs: [release]
+    secrets: inherit
+    permissions:
+      contents: write
+      packages: write
+    with:
+      version: ${{ github.ref_name || github.event.release.tag_name }}
+
+  deploy:
+    name: "Deploy"
+    uses: ./.github/workflows/deploy.yaml
+    needs: [build]
+    secrets: inherit
+
+  package:
+    name: "Package"
+    uses: ./.github/workflows/package.yaml
+    needs: [release, build] # build not needed, only for job sequencing
+    secrets: inherit
+    permissions:
+      contents: write
+    with:
+      version: ${{ github.ref_name || github.event.release.tag_name }}
+
+  publish:
+    name: "Publish"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [package]
+
+    permissions:
+      contents: write
+      id-token: write
+
+    environment:
+      name: "pypi"
+      url: "https://pypi.org/p/urban-dictionary-mcp"
+
+    env:
+      name: "urban-dictionary-mcp"
+
+    steps:
+      - name: "Debug"
+        run: |
+          echo "github.ref_name: ${{ github.ref_name || github.event.release.tag_name }}"
+
+      - name: "Download Artifact"
+        uses: actions/download-artifact@v6
+        with:
+          name: "dist"
+          path: "dist"
+
+      - name: "Verify Artifact"
+        env:
+          path: "dist"
+          name: ${{ env.name }}
+          tag: ${{ github.ref_name || github.event.release.tag_name }}
+        run: |
+          ls -lAh "${path}"/*
+          results="$(ls -lAh "${path}"/* | awk '{print $9" - "$5}')"
+          md="Artifacts:\n\`\`\`text\n${results}\n\`\`\`"
+          echo -e "${md}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Verification String: '${name//-/_}-${tag}-'"
+          find "${path}" -type f | grep -- "${name//-/_}-${tag}-" > /dev/null
+
+      - name: "Publish to PyPI"
+        id: publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+          #attestations: false
+
+      - name: "Summary"
+        if: ${{ always() }}
+        env:
+          tag: ${{ github.ref_name || github.event.release.tag_name }}
+          url: ${{ env.url }}
+        run: |
+          if [ "${{ steps.publish.outcome }}" == "success" ];then
+            md="🎉 Published Version: \`${tag}\`\n\n[${url}](${url})\n\n"
+          else
+            md="⛔ Error Publishing Version: \`${tag}\`\n\n"
+          fi
+          echo -e "${md}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "Send Notification"
+        if: ${{ !cancelled() }}
+        uses: sarisia/actions-status-discord@eb045afee445dc055c18d3d90bd0f244fd062708 # v1.16.0
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          description: |
+            - ${{ format('https://pypi.org/p/{0}/{1}', env.name, github.ref_name || github.event.release.tag_name) }}
+            - ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

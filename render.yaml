@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: urban-dictionary-mcp
+    plan: free
+    runtime: image
+    image:
+      url: ghcr.io/cssnr/urban-dictionary-mcp:latest
+    #dockerCommand: npm start
+    #healthCheckPath: /app-health-check

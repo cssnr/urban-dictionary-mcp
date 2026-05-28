@@ -1,0 +1,108 @@
+name: "Package"
+
+on:
+  workflow_call:
+    inputs: &inputs
+      version:
+        description: "Build Version"
+        type: string
+        required: true
+      version-file:
+        description: "Version File"
+        type: string
+        default: "src/*/_version.py"
+      name:
+        description: "Artifact Name"
+        type: string
+        default: "dist"
+      path:
+        description: "Build Path"
+        type: string
+        default: "dist"
+  workflow_dispatch:
+    inputs: *inputs
+
+jobs:
+  package:
+    name: "Package"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v6
+
+      - name: "Debug event.json"
+        continue-on-error: true
+        run: cat "${GITHUB_EVENT_PATH}"
+      - name: "Debug CTX github"
+        continue-on-error: true
+        env:
+          GITHUB_CTX: ${{ toJSON(github) }}
+        run: echo "$GITHUB_CTX"
+      - name: "Debug Environment"
+        continue-on-error: true
+        run: env
+
+      - name: "Install UV"
+        uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
+
+      - name: "Install Python 3.13"
+        run: |
+          uv python install 3.13
+
+      - name: "Install"
+        run: |
+          uv sync --locked --all-extras --dev
+
+      - name: "Update Version"
+        if: ${{ inputs.version-file }}
+        uses: justalemon/VersionPatcher@master
+        with:
+          version: ${{ inputs.version }}
+          initpy-files: ${{ inputs.version-file }}
+
+      - name: "Debug Version"
+        if: ${{ inputs.version-file }}
+        continue-on-error: true
+        run: |
+          cat ${{ inputs.version-file }}
+
+      - name: "Build"
+        run: |
+          uv run hatch build
+
+      - name: "List Artifacts"
+        continue-on-error: true
+        working-directory: ${{ inputs.path }}
+        run: |
+          results="$(tree .)"
+          echo "::group::results"
+          echo "${results}"
+          echo "::endgroup::"
+          md="Artifacts: \`${{ inputs.path }}\`\n\`\`\`text\n${results}\n\`\`\`"
+          echo -e "${md}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "Upload to Actions"
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ inputs.name }}
+          path: ${{ inputs.path }}
+
+      - name: "Upload Release"
+        if: ${{ github.event_name == 'release' }}
+        uses: cssnr/upload-release-action@latest
+        with:
+          globs: |
+            dist/*.whl
+            dist/*.tar.gz
+
+      - name: "Send Failure Notification"
+        if: ${{ failure() }}
+        uses: sarisia/actions-status-discord@eb045afee445dc055c18d3d90bd0f244fd062708 # v1.16.0
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          description: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

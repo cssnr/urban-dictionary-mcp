@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+  nginx:
+    image: ghcr.io/cssnr/docker-nginx-proxy:latest
+    #env_file: settings.env
+    environment:
+      SERVICE_NAME: "app"
+      SERVICE_PORT: "8000"
+      #BASIC_AUTH: ${BASIC_AUTH}
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 64M
+    depends_on:
+      - app
+    ports:
+      - "${PORT:-80}:80"
+
+  app:
+    build:
+      context: .
+    image: urban-dictionary-mcp:latest
+    command: "uvicorn urban_dictionary_mcp.server:app --host 0.0.0.0 --reload --reload-dir ."
+    env_file: settings.env
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 256M
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /app
+        - action: rebuild
+          path: ./pyproject.toml
+        - action: rebuild
+          path: ./docker-compose-dev.yaml
+    volumes:
+      - data_dir:/data
+
+volumes:
+  data_dir:

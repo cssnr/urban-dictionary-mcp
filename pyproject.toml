@@ -1,0 +1,138 @@
+[project]
+name = "urban-dictionary-mcp"
+description = "MCP Server exposing the Urban Dictionary via the Model Context Protocol."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Shane" }]
+classifiers = [
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Typing :: Typed",
+]
+dependencies = [
+  "hishel[httpx]>=1.2.1",
+  "httpx>=0.28.0",
+  "mcp[cli]>=1.27.1",
+  "pydantic>=2.0.0",
+  "uvicorn>=0.47.0",
+  "watchfiles>=1.0.0",
+]
+dynamic = ["version"]
+
+[project.urls]
+Changelog = "https://github.com/cssnr/urban-dictionary-mcp/releases"
+Discord = "https://discord.gg/wXy6m2X8wY"
+Documentation = "https://github.com/cssnr/urban-dictionary-mcp"
+Download = "https://github.com/cssnr/urban-dictionary-mcp/releases/latest"
+Funding = "https://ko-fi.com/cssnr"
+GitHub = "https://github.com/cssnr/urban-dictionary-mcp"
+Issues = "https://github.com/cssnr/urban-dictionary-mcp/issues"
+
+[project.scripts]
+urban-dictionary-mcp = "urban_dictionary_mcp.server:main"
+
+[dependency-groups]
+dev = [
+  "bandit>=1.9.4",
+  "black>=26.5.1",
+  "hatch>=1.16.5",
+  "isort>=8.0.1",
+  "mypy>=2.1.0",
+  "ruff>=0.15.15",
+  "tombi>=1.1.0",
+  "toml-run>=0.0.2",
+  "ty>=0.0.40",
+  "validate-pyproject[all]>=0.25",
+  "yamllint>=1.38.0",
+]
+
+# https://hatch.pypa.io/latest/config/build/#build-system
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Bandit
+# https://bandit.readthedocs.io/en/latest/config.html
+[tool.bandit]
+exclude_dirs = [".venv", "tests"]
+skips = ["B105", "B107"]
+
+# Black
+# https://black.readthedocs.io/en/stable/usage_and_configuration/
+[tool.black]
+line-length = 119
+target-version = ["py313"]
+extend-exclude = '(\.github)'
+
+# Hatchling
+# https://hatch.pypa.io/latest/config/build/
+[tool.hatch.version]
+path = "src/urban_dictionary_mcp/_version.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["src"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/urban_dictionary_mcp"]
+
+# Isort
+# https://pycqa.github.io/isort/docs/configuration/options.html
+[tool.isort]
+profile = "black"
+src_paths = ["src", "test"]
+skip = [".venv", ".github"]
+
+# Mypy
+# https://mypy.readthedocs.io/en/stable/config_file.html
+[tool.mypy]
+exclude = [".venv"]
+
+# Ruff
+# https://docs.astral.sh/ruff/configuration/
+[tool.ruff]
+line-length = 119
+target-version = "py313"
+extend-exclude = [".github"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "B", "Q"]
+
+# Scripts
+# https://github.com/cssnr/toml-run
+# Run any script by name with, run name. Example: `run format`
+[tool.scripts]
+build = "uv run hatch build"
+format = [
+  "uv run black .",
+  "uv run isort -c .",
+  "uv run ruff format .",
+  "uv run tombi format .",
+  "which prettier && prettier --write . || echo missing prettier",
+]
+lint = [
+  "run bandit",
+  "run mypy",
+  "run ruff",
+  "run validate",
+  "run yamllint",
+  "which prettier && prettier --check . || echo missing prettier",
+  "uv run black --check .",
+  "uv run isort -c .",
+  "uv run tombi lint",
+  "uv run ty check -v .",
+  "uv lock --check",
+]
+bandit = "uv run bandit -c pyproject.toml -r ."
+mypy = "uv run mypy ."
+ruff = "uv run ruff check ."
+validate = "uv run validate-pyproject pyproject.toml"
+yamllint = "uv run yamllint -c .github/yamllint.yaml ."
+
+cli = "uv run python -m urban_dictionary_mcp"
+dev = "uv run uvicorn urban_dictionary_mcp.server:app --app-dir src --reload"
+server = "uv run uvicorn urban_dictionary_mcp.server:app --app-dir src --host 0.0.0.0"
+compose = "docker compose -f docker-compose-dev.yaml up --watch --remove-orphans"
