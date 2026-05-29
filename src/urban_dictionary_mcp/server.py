@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -13,6 +14,7 @@ from pydantic import Field
 
 from ._version import __version__
 from .urban import UrbanDictionary
+from .utils import str_to_bool
 
 logger = logging.getLogger(__name__)
 
@@ -34,12 +36,11 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
         await urban.close()
 
 
-# NOTE: Update to use Environment Variables with Defaults
 mcp = FastMCP(
     "urban-dictionary",
     lifespan=app_lifespan,
     json_response=True,
-    stateless_http=True,
+    stateless_http=str_to_bool(os.environ.get("STATELESS_HTTP", "true")),
     transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
 )
 
@@ -49,11 +50,11 @@ mcp._mcp_server.version = __version__
 
 @mcp.tool()
 async def urban_dictionary_lookup(
-    search_term: Annotated[str, Field(description="Word or phrase to define on Urban Dictionary")],
+    search_term: Annotated[str, Field(description="Word, phrase or slang term to define using the Urban Dictionary")],
     ctx: Context[ServerSession, AppContext],
-    limit: Annotated[int, Field(description="Maximum number of results to return", default=5, ge=1, le=20)] = 5,
+    limit: Annotated[int, Field(description="Maximum number of results to return", default=5, ge=1, le=10)] = 5,
 ) -> CallToolResult:
-    """Look up a word or phrase on Urban Dictionary. Returns definitions and examples."""
+    """Look up the meaning of a word, phrase or slang term using the Urban Dictionary. Returns a list of definitions and examples."""
     logger.info("urban_lookup: %s", search_term)
     urban: UrbanDictionary = ctx.request_context.lifespan_context.urban
     results = await urban.define_term(search_term)
