@@ -123,6 +123,11 @@ jobs:
         with:
           shellcheck_opts: -e SC2012
 
+      - name: "Build"
+        if: ${{ !cancelled() }}
+        run: |
+          uv run hatch build
+
       #- name: "pytest"
       #  if: ${{ !cancelled() }}
       #  id: coverage

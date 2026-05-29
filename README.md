@@ -131,12 +131,17 @@ For a Portainer Deploy workflow see the [.github/workflows/deploy.yaml](https://
 
 ## Configure<a id="configure"></a>
 
-| Variable            | Description   |
-| :------------------ | :------------ |
-| `HISHEL_CACHE_PATH` | Cache DB Path |
-| `HISHEL_CACHE_TTL`  | Cache TTL     |
+This is for advanced configuration only.
 
-These are for advanced configuration.
+| Variable            | Description                | Default             |
+| :------------------ | :------------------------- | :------------------ |
+| `HISHEL_CACHE_PATH` | Path cache database file   | `./hishel_cache.db` |
+| `HISHEL_CACHE_TTL`  | Cache TTL in seconds       | `1209600`           |
+| `STATELESS_HTTP`    | Enable stateless HTTP mode | `true`              |
+
+Boolean True Values (case-insensitive): 1, on, t, true, y, yes
+
+In Docker the cache path is `/data/hishel_cache.db` so you can mount `/data` as a volume.
 
 ## Development<a id="development"></a>
 
