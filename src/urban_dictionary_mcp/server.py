@@ -34,6 +34,7 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
         await urban.close()
 
 
+# NOTE: Update to use Environment Variables with Defaults
 mcp = FastMCP(
     "urban-dictionary",
     lifespan=app_lifespan,
