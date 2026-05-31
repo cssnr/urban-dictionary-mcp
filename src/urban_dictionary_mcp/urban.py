@@ -4,10 +4,19 @@ from pathlib import Path
 from typing import Any, Dict
 from urllib import parse
 
-from hishel import AsyncSqliteStorage, FilterPolicy
+from hishel import AsyncSqliteStorage, BaseFilter, FilterPolicy, Request
 from hishel.httpx import AsyncCacheClient
 
 logger = logging.getLogger(__name__)
+
+
+class _RequestFilters(BaseFilter[Request]):
+    def needs_body(self) -> bool:
+        return False
+
+    def apply(self, item: Request, body: bytes | None) -> bool:
+        logger.info("item.url: %s", item.url)
+        return not item.url.endswith("/random")
 
 
 class UrbanDictionary(object):
@@ -19,7 +28,7 @@ class UrbanDictionary(object):
         cache_ttl = int(os.environ.get("HISHEL_CACHE_TTL", "1209600"))
         logger.info("UrbanDictionary(cache_path=%s, cache_ttl=%s)", cache_path, cache_ttl)
         storage = AsyncSqliteStorage(database_path=cache_path, default_ttl=cache_ttl)
-        policy = FilterPolicy()
+        policy = FilterPolicy(request_filters=[_RequestFilters()])
         self._client = AsyncCacheClient(storage=storage, policy=policy, follow_redirects=True, timeout=10)
 
     def __repr__(self):
@@ -44,6 +53,16 @@ class UrbanDictionary(object):
         url = f"{self.url}/define"
         params = {"term": safe_word}
         result = await self._get_request(url, params=params)
+        return await self._filter_list(result)
+
+    async def random_terms(self) -> Dict[str, Any]:
+        """Get random terms from Urban Dictionary."""
+        url = f"{self.url}/random"
+        result = await self._get_request(url)
+        return await self._filter_list(result)
+
+    @staticmethod
+    async def _filter_list(result: Dict[str, Any]) -> Dict[str, Any]:
         if "list" in result:
             result["list"] = [
                 {k: item[k] for k in ("word", "definition", "example", "thumbs_up", "thumbs_down")}

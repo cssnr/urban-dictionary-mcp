@@ -55,17 +55,35 @@ async def urban_dictionary_lookup(
     limit: Annotated[int, Field(description="Maximum number of results to return", default=5, ge=1, le=10)] = 5,
 ) -> CallToolResult:
     """Look up the meaning of a word, phrase or slang term using the Urban Dictionary. Returns a list of definitions and examples."""
-    logger.info("urban_lookup: %s", search_term)
+    logger.info("urban_lookup (%s): %s", limit, search_term)
     urban: UrbanDictionary = ctx.request_context.lifespan_context.urban
     results = await urban.define_term(search_term)
+    return _result(results, limit)
+
+
+@mcp.tool()
+async def urban_dictionary_random(
+    ctx: Context[ServerSession, AppContext],
+    limit: Annotated[int, Field(description="Maximum number of results to return", default=5, ge=1, le=10)] = 5,
+) -> CallToolResult:
+    """Get random words, phrases or slang terms from Urban Dictionary. Returns a list of definitions and examples."""
+    logger.info("urban_random (%s)", limit)
+    urban: UrbanDictionary = ctx.request_context.lifespan_context.urban
+    results = await urban.random_terms()
+    return _result(results, limit)
+
+
+def _result(results: dict, limit: int) -> CallToolResult:
+    results["results_found"] = len(results.get("list", []))
+    results["total"] = results["results_found"]
     if "list" in results:
-        logger.info("length: %s", len(results["list"]))
         results["list"] = results["list"][:limit]
+        results["total"] = len(results["list"])
     logger.info("results: %s", results)
-    text = json.dumps(results)
     is_error = results.get("error")
     if is_error:
         logger.error("is_error: %s - results: %s", is_error, results)
+    text = json.dumps(results)
     return CallToolResult(content=[TextContent(type="text", text=text)], isError=bool(is_error))
 
 
