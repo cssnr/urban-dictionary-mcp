@@ -53,16 +53,16 @@ class UrbanDictionary(object):
         url = f"{self.url}/define"
         params = {"term": safe_word}
         result = await self._get_request(url, params=params)
-        return await self._filter_list(result)
+        return self._filter_list(result)
 
     async def random_terms(self) -> Dict[str, Any]:
         """Get random terms from Urban Dictionary."""
         url = f"{self.url}/random"
         result = await self._get_request(url)
-        return await self._filter_list(result)
+        return self._filter_list(result)
 
     @staticmethod
-    async def _filter_list(result: Dict[str, Any]) -> Dict[str, Any]:
+    def _filter_list(result: Dict[str, Any]) -> Dict[str, Any]:
         if "list" in result:
             result["list"] = [
                 {k: item[k] for k in ("word", "definition", "example", "thumbs_up", "thumbs_down")}
