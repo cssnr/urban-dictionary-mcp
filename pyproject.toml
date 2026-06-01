@@ -14,11 +14,11 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  "hishel[httpx]>=1.2.1",
+  "hishel[httpx]>=1.0.0",
   "httpx>=0.28.0",
-  "mcp[cli]>=1.27.1",
+  "mcp[cli]>=1.27.0",
   "pydantic>=2.0.0",
-  "uvicorn>=0.47.0",
+  "uvicorn>=0.31.1",
 ]
 dynamic = ["version"]
 
