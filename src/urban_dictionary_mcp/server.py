@@ -50,8 +50,8 @@ mcp._mcp_server.version = __version__
 
 @mcp.tool()
 async def urban_dictionary_lookup(
-    search_term: Annotated[str, Field(description="Word, phrase or slang term to define using the Urban Dictionary")],
     ctx: Context[ServerSession, AppContext],
+    search_term: Annotated[str, Field(description="Word, phrase or slang term to define using the Urban Dictionary")],
     limit: Annotated[int, Field(description="Maximum number of results to return", default=5, ge=1, le=10)] = 5,
 ) -> CallToolResult:
     """Look up the meaning of a word, phrase or slang term using the Urban Dictionary. Returns a list of definitions and examples."""

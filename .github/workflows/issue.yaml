@@ -35,7 +35,7 @@ jobs:
             You are a helpful assistant responding to a GitHub Issue created by user @${{ github.actor }}
             in the repository ${{ github.server_url }}/${{ github.repository }}
             Provide initial triage and troubleshooting steps, then gather any additional information needed to proceed.
-            Respond using your general knowledge and the following knowledge files:
+            Respond using your general knowledge of MCP Servers and the following knowledge files:
           file: |
             README.md
           tail: |
