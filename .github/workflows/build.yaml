@@ -36,6 +36,10 @@ jobs:
       contents: write
       packages: write
 
+    environment:
+      name: docker
+      url: https://hub.docker.com/r/${{ github.repository }}
+
     steps:
       - name: "Debug CTX github"
         if: ${{ !github.event.act }}
@@ -64,12 +68,18 @@ jobs:
           version: ${{ inputs.version }}
           initpy-files: ${{ inputs.version-file }}
 
-      - name: "Docker Login"
+      - name: "Docker Login - GHCR"
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ vars.GHCR_USER }}
           password: ${{ secrets.GHCR_PASS }}
+
+      - name: "Docker Login - Hub"
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PASS }}
 
       - name: "Setup QEMU"
         uses: docker/setup-qemu-action@v4
@@ -101,7 +111,9 @@ jobs:
         id: tags
         uses: cssnr/docker-tags-action@v2
         with:
-          images: "ghcr.io/${{ github.repository }}"
+          images: |
+            ${{ github.repository }}
+            ghcr.io/${{ github.repository }}
           tags: |
             ${{ env.dev }}
             ${{ steps.version.outputs.tags }}

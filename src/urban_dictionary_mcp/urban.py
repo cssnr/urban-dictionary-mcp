@@ -2,7 +2,6 @@ import logging
 import os
 from pathlib import Path
 from typing import Any, Dict
-from urllib import parse
 
 from hishel import AsyncSqliteStorage, BaseFilter, FilterPolicy, Request
 from hishel.httpx import AsyncCacheClient
@@ -49,9 +48,8 @@ class UrbanDictionary(object):
 
     async def define_term(self, term: str) -> Dict[str, Any]:
         """Get the Urban Dictionary definition for provided <word>."""
-        safe_word = parse.quote_plus(term.strip().lower())
         url = f"{self.url}/define"
-        params = {"term": safe_word}
+        params = {"term": term.strip().lower()}
         result = await self._get_request(url, params=params)
         return self._filter_list(result)
 
