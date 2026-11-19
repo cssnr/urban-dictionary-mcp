@@ -1,3 +1,5 @@
+# Example Docker Swarm + Traefik stack. The hosted instance (urban-dictionary-mcp.cssnr.com) is
+# deployed from hosted-domains/docker-compose (cssnr-urban-dictionary-mcp/), not from this repo.
 version: "3.8"
 
 services:
