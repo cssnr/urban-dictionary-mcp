@@ -31,12 +31,6 @@ jobs:
     with:
       version: ${{ github.ref_name || github.event.release.tag_name }}
 
-  deploy:
-    name: "Deploy"
-    uses: ./.github/workflows/deploy.yaml
-    needs: [build]
-    secrets: inherit
-
   package:
     name: "Package"
     uses: ./.github/workflows/package.yaml
